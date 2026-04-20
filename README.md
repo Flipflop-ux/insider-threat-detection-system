@@ -8,3 +8,6 @@ This project focuses on detecting insider threats using machine learning and beh
 - design: system architecture
 - results: outputs and findingsder-threat-detection-system
 
+## Branches
+- main: final version
+- development: active development work

@@ -1,1 +1,1 @@
-Design of insider threat detection system
+This folder contains the system architecture diagram.

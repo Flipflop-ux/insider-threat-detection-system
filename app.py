@@ -10,49 +10,30 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import seaborn as sns
 
-# ── PAGE CONFIG ──────────────────────────────────────────────
 st.set_page_config(
     page_title="Insider Threat Detection",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ── STYLING ───────────────────────────────────────────────────
 st.markdown("""
-    <style>
-    .block-container {
-        padding-top: 2rem;
-    }
+<style>
+.block-container {
+    padding-top: 2rem;
+}
 
-    h1 {
-        font-size: 2.4rem !important;
-        font-weight: 700 !important;
-    }
+h1 {
+    font-size: 2.4rem !important;
+    font-weight: 700 !important;
+}
 
-    h2, h3 {
-        font-weight: 650 !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        font-size: 16px;
-        padding: 10px 0;
-    }
-
-    .stMetric {
-        background-color: rgba(255, 255, 255, 0.03);
-        padding: 18px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .high-risk { color: #e74c3c; font-weight: bold; }
-    .medium-risk { color: #f39c12; font-weight: bold; }
-    .low-risk { color: #2ecc71; font-weight: bold; }
-    </style>
+.stMetric {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+</style>
 """, unsafe_allow_html=True)
 
 PALETTE = {
@@ -61,24 +42,7 @@ PALETTE = {
     "High": "#e74c3c"
 }
 
-# ── SIDEBAR ───────────────────────────────────────────────────
-st.sidebar.title("Insider Threat Detection")
-st.sidebar.caption("Behavioral Risk Dashboard")
-st.sidebar.markdown("---")
 
-st.sidebar.markdown("### Data Input")
-
-uploaded_file = st.sidebar.file_uploader(
-    "Upload anomaly_scores.csv",
-    type=["csv"],
-    help="Upload a CSV containing user risk scores generated from the model."
-)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Filter Options")
-
-
-# ── RISK LEVEL FUNCTION ───────────────────────────────────────
 def assign_risk_level(score):
     if score >= 70:
         return "High"
@@ -88,7 +52,6 @@ def assign_risk_level(score):
         return "Low"
 
 
-# ── LOAD DATA ─────────────────────────────────────────────────
 @st.cache_data
 def load_data(file):
     df = pd.read_csv(file)
@@ -105,7 +68,6 @@ def load_data(file):
 
     df["risk_level"] = df["risk_score"].apply(assign_risk_level)
     df = df.sort_values("risk_score", ascending=False).reset_index(drop=True)
-
     return df
 
 
@@ -178,11 +140,22 @@ def load_sample_data():
     df = pd.concat([low_users, medium_users, high_users])
     df["risk_level"] = df["risk_score"].apply(assign_risk_level)
     df = df.sort_values("risk_score", ascending=False).reset_index(drop=True)
-
     return df
 
 
-# ── LOAD SELECTED DATA ────────────────────────────────────────
+# SIDEBAR
+st.sidebar.title("Insider Threat Detection")
+st.sidebar.caption("Behavioral Risk Dashboard")
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("### Data Input")
+
+uploaded_file = st.sidebar.file_uploader(
+    "Upload anomaly_scores.csv",
+    type=["csv"],
+    help="Upload a CSV containing user risk scores generated from the model."
+)
+
 if uploaded_file:
     df = load_data(uploaded_file)
     st.sidebar.success(f"Loaded {len(df)} users")
@@ -190,8 +163,20 @@ else:
     df = load_sample_data()
     st.sidebar.info("Using sample data. Upload anomaly_scores.csv to view your model results.")
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Risk Counts")
 
-# ── SIDEBAR FILTERS ───────────────────────────────────────────
+high_total = len(df[df["risk_level"] == "High"])
+medium_total = len(df[df["risk_level"] == "Medium"])
+low_total = len(df[df["risk_level"] == "Low"])
+
+st.sidebar.write(f"High Risk: {high_total}")
+st.sidebar.write(f"Medium Risk: {medium_total}")
+st.sidebar.write(f"Low Risk: {low_total}")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Filter Options")
+
 risk_filter = st.sidebar.multiselect(
     "Risk Level",
     options=["High", "Medium", "Low"],
@@ -215,7 +200,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Showing:** {len(df_filtered)} of {len(df)} users")
 
 
-# ── MAIN HEADER ───────────────────────────────────────────────
+# MAIN HEADER
 st.title("Insider Threat Detection Dashboard")
 st.caption(
     "Behavioral anomaly detection using Isolation Forest. "
@@ -224,36 +209,38 @@ st.caption(
 
 st.markdown("---")
 
+if df_filtered.empty:
+    st.warning("No users match the selected filters. Try selecting more risk levels or widening the score range.")
+    st.stop()
 
-# ── KPI METRICS ROW ───────────────────────────────────────────
+
+# KPI METRICS
 col1, col2, col3, col4, col5 = st.columns(5)
 
-total_users = len(df)
-high_risk = len(df[df["risk_level"] == "High"])
-medium_risk = len(df[df["risk_level"] == "Medium"])
-low_risk = len(df[df["risk_level"] == "Low"])
-avg_score = df["risk_score"].mean()
+total_users = len(df_filtered)
+high_risk = len(df_filtered[df_filtered["risk_level"] == "High"])
+medium_risk = len(df_filtered[df_filtered["risk_level"] == "Medium"])
+low_risk = len(df_filtered[df_filtered["risk_level"] == "Low"])
+avg_score = df_filtered["risk_score"].mean()
 
 with col1:
-    st.metric("Total Users", total_users)
+    st.metric("Users Shown", total_users)
 
 with col2:
-    st.metric("High Risk", high_risk, delta=f"{high_risk / total_users * 100:.1f}%")
+    st.metric("High Risk", high_risk)
 
 with col3:
-    st.metric("Medium Risk", medium_risk, delta=f"{medium_risk / total_users * 100:.1f}%")
+    st.metric("Medium Risk", medium_risk)
 
 with col4:
-    st.metric("Low Risk", low_risk, delta=f"{low_risk / total_users * 100:.1f}%")
+    st.metric("Low Risk", low_risk)
 
 with col5:
     st.metric("Average Risk Score", f"{avg_score:.1f}")
 
-
 st.markdown("---")
 
 
-# ── TABS ──────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Risk Overview",
     "User Drilldown",
@@ -263,16 +250,14 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 
-# ════════════════════════════════════════
-# TAB 1 — RISK OVERVIEW
-# ════════════════════════════════════════
+# TAB 1
 with tab1:
     col_left, col_right = st.columns(2)
 
     with col_left:
-        st.subheader("Top 20 Highest-Risk Users")
+        st.subheader("Highest-Risk Users in Current View")
 
-        top20 = df.head(20).copy()
+        top20 = df_filtered.head(20).copy()
         bar_colors = top20["risk_level"].map(PALETTE)
 
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -294,7 +279,7 @@ with tab1:
             )
 
         ax.set_xlabel("Risk Score")
-        ax.set_title("Top 20 Highest-Risk Users")
+        ax.set_title("Highest-Risk Users")
         ax.set_xlim(0, 115)
         ax.invert_yaxis()
 
@@ -303,50 +288,35 @@ with tab1:
             Patch(facecolor=PALETTE["Medium"], label="Medium Risk"),
             Patch(facecolor=PALETTE["Low"], label="Low Risk")
         ]
-
         ax.legend(handles=legend_elements, loc="lower right")
+
         fig.tight_layout()
         st.pyplot(fig)
         plt.close()
 
     with col_right:
-        st.subheader("Risk Score Distribution")
+        st.subheader("Risk Score Distribution in Current View")
 
         fig, ax = plt.subplots(figsize=(8, 6))
 
-        ax.hist(
-            df[df["risk_level"] == "Low"]["risk_score"],
-            bins=30,
-            color=PALETTE["Low"],
-            alpha=0.8,
-            label="Low Risk",
-            edgecolor="white"
-        )
-
-        ax.hist(
-            df[df["risk_level"] == "Medium"]["risk_score"],
-            bins=20,
-            color=PALETTE["Medium"],
-            alpha=0.8,
-            label="Medium Risk",
-            edgecolor="white"
-        )
-
-        ax.hist(
-            df[df["risk_level"] == "High"]["risk_score"],
-            bins=10,
-            color=PALETTE["High"],
-            alpha=0.8,
-            label="High Risk",
-            edgecolor="white"
-        )
+        for level in ["Low", "Medium", "High"]:
+            subset = df_filtered[df_filtered["risk_level"] == level]
+            if not subset.empty:
+                ax.hist(
+                    subset["risk_score"],
+                    bins=15,
+                    color=PALETTE[level],
+                    alpha=0.8,
+                    label=f"{level} Risk",
+                    edgecolor="white"
+                )
 
         ax.axvline(70, color="red", linestyle="--", linewidth=1.5, label="High Threshold")
         ax.axvline(40, color="orange", linestyle="--", linewidth=1.5, label="Medium Threshold")
 
         ax.set_xlabel("Risk Score")
         ax.set_ylabel("Number of Users")
-        ax.set_title("User Risk Score Distribution")
+        ax.set_title("Risk Score Distribution")
         ax.legend()
 
         fig.tight_layout()
@@ -355,13 +325,13 @@ with tab1:
 
     st.subheader("External Email Rate vs USB Usage")
 
-    if "external_email_rate" in df.columns and "usb_connections" in df.columns:
+    if "external_email_rate" in df_filtered.columns and "usb_connections" in df_filtered.columns:
         fig, ax = plt.subplots(figsize=(10, 5))
 
         scatter = ax.scatter(
-            df["external_email_rate"],
-            df["usb_connections"],
-            c=df["risk_score"],
+            df_filtered["external_email_rate"],
+            df_filtered["usb_connections"],
+            c=df_filtered["risk_score"],
             cmap="RdYlGn_r",
             alpha=0.7,
             s=60,
@@ -371,7 +341,7 @@ with tab1:
             vmax=100
         )
 
-        top10 = df.head(10)
+        top10 = df_filtered.head(10)
 
         for _, row in top10.iterrows():
             ax.annotate(
@@ -398,21 +368,19 @@ with tab1:
         st.info("External email and USB usage columns are not available in this dataset.")
 
 
-# ════════════════════════════════════════
-# TAB 2 — USER DRILLDOWN
-# ════════════════════════════════════════
+# TAB 2
 with tab2:
     st.subheader("Individual User Drilldown")
-    st.caption("Select a user to review their behavioral profile and risk score.")
+    st.caption("Select a user from the current filtered view.")
 
     selected_user = st.selectbox(
         "Select a user to investigate:",
-        options=df["user"].tolist(),
+        options=df_filtered["user"].tolist(),
         index=0,
         help="Users are sorted by risk score from highest to lowest."
     )
 
-    user_data = df[df["user"] == selected_user].iloc[0]
+    user_data = df_filtered[df_filtered["user"] == selected_user].iloc[0]
     risk_level = user_data["risk_level"]
     risk_score = user_data["risk_score"]
     color = PALETTE.get(str(risk_level), "#888")
@@ -475,7 +443,6 @@ with tab2:
         width = 0.35
 
         fig, ax = plt.subplots(figsize=(10, 4))
-
         ax.bar(x - width / 2, user_vals, width, label=selected_user, color=color, alpha=0.85)
         ax.bar(x + width / 2, avg_vals, width, label="Population Average", color="#888", alpha=0.6)
 
@@ -492,9 +459,7 @@ with tab2:
         st.info("No rate-based behavioral features are available for this dataset.")
 
 
-# ════════════════════════════════════════
-# TAB 3 — FEATURE ANALYSIS
-# ════════════════════════════════════════
+# TAB 3
 with tab3:
     col_l, col_r = st.columns(2)
 
@@ -517,10 +482,11 @@ with tab3:
             "off_hours_usb_rate"
         ]
 
-        heatmap_cols = [c for c in heatmap_cols if c in df.columns]
+        heatmap_cols = [c for c in heatmap_cols if c in df_filtered.columns]
 
         if len(heatmap_cols) > 1:
-            corr = df[heatmap_cols].corr()
+            corr = df_filtered[heatmap_cols].corr()
+
             fig, ax = plt.subplots(figsize=(8, 7))
             mask = np.triu(np.ones_like(corr, dtype=bool))
 
@@ -555,8 +521,8 @@ with tab3:
             "off_hours_email_rate"
         ]
 
-        if all(c in df.columns for c in needed):
-            plot_df = df[needed].copy()
+        if all(c in df_filtered.columns for c in needed):
+            plot_df = df_filtered[needed].copy()
             plot_df["user_type"] = plot_df["is_anomaly"].map({
                 True: "Flagged",
                 False: "Normal"
@@ -608,13 +574,13 @@ with tab3:
 
     st.subheader("Most Predictive Features")
 
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_cols = df_filtered.select_dtypes(include=[np.number]).columns.tolist()
     numeric_cols = [c for c in numeric_cols if c != "risk_score"]
 
-    if "risk_score" in df.columns and numeric_cols:
+    if "risk_score" in df_filtered.columns and numeric_cols:
         correlations = (
-            df[numeric_cols]
-            .corrwith(df["risk_score"])
+            df_filtered[numeric_cols]
+            .corrwith(df_filtered["risk_score"])
             .abs()
             .sort_values(ascending=False)
             .head(10)
@@ -622,7 +588,7 @@ with tab3:
 
         fig, ax = plt.subplots(figsize=(10, 4))
 
-        bars = ax.barh(
+        ax.barh(
             correlations.index[::-1],
             correlations.values[::-1],
             color=[
@@ -644,9 +610,7 @@ with tab3:
         st.info("Not enough numeric columns are available for feature analysis.")
 
 
-# ════════════════════════════════════════
-# TAB 4 — FULL USER TABLE
-# ════════════════════════════════════════
+# TAB 4
 with tab4:
     st.subheader("Full User Risk Table")
 
@@ -702,9 +666,7 @@ with tab4:
     )
 
 
-# ════════════════════════════════════════
-# TAB 5 — ABOUT
-# ════════════════════════════════════════
+# TAB 5
 with tab5:
     st.subheader("About This Dashboard")
 

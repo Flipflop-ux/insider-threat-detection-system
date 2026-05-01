@@ -33,7 +33,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 # ── PAGE CONFIG ──────────────────────────────────────────────
 st.set_page_config(
     page_title="Insider Threat Detection",
-    page_icon="🔐",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -51,7 +51,6 @@ st.markdown("""
     .medium-risk { color: #f39c12; font-weight: bold; }
     .low-risk { color: #2ecc71; font-weight: bold; }
 
-    /* Alert banner pulse animation */
     @keyframes pulse {
         0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
         70%  { box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); }
@@ -234,9 +233,9 @@ def generate_pdf_report(user_id, user_data, df, behavioral_fig_bytes):
     story.append(Paragraph("Analyst Recommendation", section_style))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.lightgrey, spaceAfter=8))
     recs = {
-        "High":   "⚠️ IMMEDIATE REVIEW REQUIRED — This user's behavioral profile exhibits significant deviations across multiple dimensions. Escalate to senior analyst and cross-reference with HR and access control logs.",
-        "Medium": "🔍 MONITORING RECOMMENDED — This user shows moderate anomalous behavior. Schedule a review of recent activity logs within 48 hours.",
-        "Low":    "✅ NO ACTION REQUIRED — This user's behavioral profile is within normal parameters. Continue passive monitoring per standard policy.",
+        "High":   "IMMEDIATE REVIEW REQUIRED — This user's behavioral profile exhibits significant deviations across multiple dimensions. Escalate to senior analyst and cross-reference with HR and access control logs.",
+        "Medium": "MONITORING RECOMMENDED — This user shows moderate anomalous behavior. Schedule a review of recent activity logs within 48 hours.",
+        "Low":    "NO ACTION REQUIRED — This user's behavioral profile is within normal parameters. Continue passive monitoring per standard policy.",
     }
     rec_style = ParagraphStyle("rec", parent=styles["Normal"], fontSize=9,
                                 backColor=colors.HexColor("#f8f9fa"),
@@ -258,16 +257,7 @@ def generate_pdf_report(user_id, user_data, df, behavioral_fig_bytes):
 
 # ── SIDEBAR ───────────────────────────────────────────────────
 st.sidebar.image("https://img.icons8.com/color/96/security-shield-green.png", width=80)
-st.sidebar.title("🔐 Insider Threat\nDetection System")
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Upload Data")
-
-uploaded_file = st.sidebar.file_uploader(
-    "Upload anomaly_scores.csv",
-    type=["csv"],
-    help="Upload the output file from your Isolation Forest pipeline"
-)
-
+st.sidebar.title("Insider Threat Detection System")
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Filters")
 
@@ -335,10 +325,10 @@ def load_sample_data():
 # Load data
 if uploaded_file:
     df = load_data(uploaded_file)
-    st.sidebar.success(f"✅ Loaded {len(df)} users")
+    st.sidebar.success(f"Loaded {len(df)} users")
 else:
     df = load_sample_data()
-    st.sidebar.info("📊 Using sample data — upload your anomaly_scores.csv to use real results")
+    st.sidebar.info("Using sample data — upload your anomaly_scores.csv to use real results")
 
 # ── SIDEBAR FILTERS ───────────────────────────────────────────
 risk_filter = st.sidebar.multiselect(
@@ -359,10 +349,20 @@ df_filtered = df[
 ]
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Upload Data")
+
+uploaded_file = st.sidebar.file_uploader(
+    "Upload anomaly_scores.csv",
+    type=["csv"],
+    help="Upload the output file from your Isolation Forest pipeline"
+)
+
+st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Showing:** {len(df_filtered)} of {len(df)} users")
 
 # ── MAIN HEADER ───────────────────────────────────────────────
-st.title("🔐 Insider Threat Detection Dashboard")
+st.title("Insider Threat Detection Dashboard")
 st.markdown("*Machine Learning-Based Behavioral Analytics — Isolation Forest*")
 st.markdown("---")
 
@@ -378,39 +378,37 @@ avg_score     = df["risk_score"].mean()
 with col1:
     st.metric("Total Users", total_users)
 with col2:
-    st.metric("🔴 High Risk", high_risk, delta=f"{high_risk/total_users*100:.1f}%")
+    st.metric("High Risk", high_risk, delta=f"{high_risk/total_users*100:.1f}%")
 with col3:
-    st.metric("🟡 Medium Risk", medium_risk, delta=f"{medium_risk/total_users*100:.1f}%")
+    st.metric("Medium Risk", medium_risk, delta=f"{medium_risk/total_users*100:.1f}%")
 with col4:
-    st.metric("🟢 Low Risk", low_risk, delta=f"{low_risk/total_users*100:.1f}%")
+    st.metric("Low Risk", low_risk, delta=f"{low_risk/total_users*100:.1f}%")
 with col5:
     st.metric("Avg Risk Score", f"{avg_score:.1f}")
 
 st.markdown("---")
 
-# ── LIVE ALERT BANNER ─────────────────────────────────────────
-high_risk_users  = df[df["risk_level"] == "High"].sort_values("risk_score", ascending=False)
-med_risk_users   = df[df["risk_level"] == "Medium"].sort_values("risk_score", ascending=False)
+# LIVE ALERT BANNER
+high_risk_users = df[df["risk_level"] == "High"].sort_values("risk_score", ascending=False)
+med_risk_users  = df[df["risk_level"] == "Medium"].sort_values("risk_score", ascending=False)
 
 if len(high_risk_users) > 0:
-    # Build badge HTML for each high risk user
     badges_html = "".join([
-        f'<span class="alert-badge">⚠️ {row["user"]} — {row["risk_score"]:.0f}</span>'
+        f'<span class="alert-badge">{row["user"]} — {row["risk_score"]:.0f}</span>'
         for _, row in high_risk_users.head(10).iterrows()
     ])
     more_text = f'<span style="color:#aaa; font-size:12px;">+{len(high_risk_users)-10} more</span>' if len(high_risk_users) > 10 else ""
-
     st.markdown(f"""
         <div class="alert-banner">
-            <h3>🚨 ACTIVE SECURITY ALERTS — {len(high_risk_users)} HIGH RISK USER{'S' if len(high_risk_users) > 1 else ''} DETECTED</h3>
+            <h3>ACTIVE SECURITY ALERTS — {len(high_risk_users)} HIGH RISK USER{"S" if len(high_risk_users) > 1 else ""} DETECTED</h3>
             <div class="alert-row">
                 {badges_html}
                 {more_text}
             </div>
             <div class="alert-meta">
-                ⏱ Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} &nbsp;|&nbsp;
-                🔍 Action required: Open <b>User Drilldown</b> tab to investigate &nbsp;|&nbsp;
-                📄 Generate PDF report for each flagged user
+                Alert generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} &nbsp;|&nbsp;
+                Action required: Open <b>User Profile</b> tab to investigate &nbsp;|&nbsp;
+                Generate PDF report for each flagged user
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -423,25 +421,28 @@ if len(med_risk_users) > 0:
     more_med = f'+{len(med_risk_users)-8} more' if len(med_risk_users) > 8 else ""
     st.markdown(f"""
         <div class="warning-banner">
-            <h4>⚠️ MONITORING WATCH — {len(med_risk_users)} Medium Risk User{'s' if len(med_risk_users) > 1 else ''}</h4>
+            <h4>MONITORING WATCH — {len(med_risk_users)} Medium Risk User{"s" if len(med_risk_users) > 1 else ""}</h4>
             <div>{med_badges} <span style="color:#aaa;font-size:11px;">{more_med}</span></div>
         </div>
     """, unsafe_allow_html=True)
 
 if len(high_risk_users) == 0 and len(med_risk_users) == 0:
-    st.markdown("""
+    st.markdown('''
         <div class="all-clear">
-            ✅ ALL CLEAR — No anomalous users detected in current dataset
+            ALL CLEAR — No anomalous users detected in current dataset
         </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
+
 
 st.markdown("---")
+
+# ── TABS ──────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Risk Overview",
-    "👤 User Drilldown",
-    "🔥 Feature Analysis",
-    "📋 Full User Table",
-    "ℹ️ About"
+    "Risk Overview",
+    "User Profile",
+    "Feature Analysis",
+    "Full User Table",
+    "About"
 ])
 
 # ════════════════════════════════════════
@@ -519,7 +520,7 @@ with tab1:
 # TAB 2 — USER DRILLDOWN
 # ════════════════════════════════════════
 with tab2:
-    st.subheader("Individual User Drilldown")
+    st.subheader("Individual User Profile")
     st.markdown("Select any user to see their full behavioral profile and risk breakdown.")
 
     # User selector
@@ -607,7 +608,7 @@ with tab2:
 
     # ── PDF EXPORT ──
     st.markdown("---")
-    st.subheader("📄 Export Analyst Report")
+    st.subheader("Export Analyst Report")
     st.markdown("Generate a one-page PDF investigation report for this user.")
 
     if st.button(f"⬇️ Generate PDF Report for {selected_user}", type="primary"):
@@ -637,12 +638,12 @@ with tab2:
             pdf_bytes = generate_pdf_report(selected_user, user_data, df, fig_bytes)
 
         st.download_button(
-            label=f"📥 Download {selected_user}_report.pdf",
+            label=f"Download {selected_user}_report.pdf",
             data=pdf_bytes,
             file_name=f"{selected_user}_threat_report_{datetime.now().strftime('%Y%m%d')}.pdf",
             mime="application/pdf",
         )
-        st.success("✅ Report ready — click above to download!")
+        st.success("Report ready — click above to download!")
 
 # ════════════════════════════════════════
 # TAB 3 — FEATURE ANALYSIS
@@ -755,7 +756,7 @@ with tab4:
     # Download button
     csv = df_filtered.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="⬇️ Download Filtered Results as CSV",
+        label="Download Filtered Results as CSV",
         data=csv,
         file_name="risk_scores_filtered.csv",
         mime="text/csv"

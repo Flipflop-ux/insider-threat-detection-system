@@ -256,19 +256,29 @@ def generate_pdf_report(user_id, user_data, df, behavioral_fig_bytes):
     return buffer.read()
 
 # ── SIDEBAR ───────────────────────────────────────────────────
-st.sidebar.image("https://img.icons8.com/color/96/security-shield-green.png", width=80)
 st.sidebar.title("Insider Threat Detection System")
 st.sidebar.markdown("---")
+st.sidebar.markdown("### Filters")
 
-# File uploader MUST be defined before load data
+risk_filter = st.sidebar.multiselect(
+    "Filter by Risk Level",
+    options=["High", "Medium", "Low"],
+    default=["High", "Medium", "Low"]
+)
+
+score_range = st.sidebar.slider(
+    "Risk Score Range",
+    min_value=0, max_value=100, value=(0, 100)
+)
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### Upload Data")
+
 uploaded_file = st.sidebar.file_uploader(
     "Upload anomaly_scores.csv",
     type=["csv"],
     help="Upload the output file from your Isolation Forest pipeline"
 )
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Filters")
 
 # ── LOAD DATA ─────────────────────────────────────────────────
 @st.cache_data

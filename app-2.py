@@ -50,6 +50,79 @@ st.markdown("""
     .high-risk { color: #e74c3c; font-weight: bold; }
     .medium-risk { color: #f39c12; font-weight: bold; }
     .low-risk { color: #2ecc71; font-weight: bold; }
+
+    /* Alert banner pulse animation */
+    @keyframes pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+        70%  { box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+    }
+    .alert-banner {
+        background: linear-gradient(135deg, #1a0000, #2d0000);
+        border: 2px solid #e74c3c;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        animation: pulse 2s infinite;
+    }
+    .alert-banner h3 {
+        color: #e74c3c;
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        letter-spacing: 1px;
+    }
+    .alert-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .alert-badge {
+        background-color: #e74c3c;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .alert-meta {
+        color: #aaa;
+        font-size: 12px;
+        margin-top: 8px;
+    }
+    .warning-banner {
+        background: linear-gradient(135deg, #1a1000, #2d1f00);
+        border: 2px solid #f39c12;
+        border-radius: 10px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+    }
+    .warning-banner h4 {
+        color: #f39c12;
+        margin: 0 0 6px 0;
+        font-size: 14px;
+    }
+    .warning-badge {
+        background-color: #f39c12;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        font-family: monospace;
+        display: inline-block;
+        margin: 2px;
+    }
+    .all-clear {
+        background: linear-gradient(135deg, #001a00, #002d00);
+        border: 2px solid #2ecc71;
+        border-radius: 10px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        color: #2ecc71;
+        font-weight: bold;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -315,7 +388,54 @@ with col5:
 
 st.markdown("---")
 
-# ── TABS ──────────────────────────────────────────────────────
+# ── LIVE ALERT BANNER ─────────────────────────────────────────
+high_risk_users  = df[df["risk_level"] == "High"].sort_values("risk_score", ascending=False)
+med_risk_users   = df[df["risk_level"] == "Medium"].sort_values("risk_score", ascending=False)
+
+if len(high_risk_users) > 0:
+    # Build badge HTML for each high risk user
+    badges_html = "".join([
+        f'<span class="alert-badge">⚠️ {row["user"]} — {row["risk_score"]:.0f}</span>'
+        for _, row in high_risk_users.head(10).iterrows()
+    ])
+    more_text = f'<span style="color:#aaa; font-size:12px;">+{len(high_risk_users)-10} more</span>' if len(high_risk_users) > 10 else ""
+
+    st.markdown(f"""
+        <div class="alert-banner">
+            <h3>🚨 ACTIVE SECURITY ALERTS — {len(high_risk_users)} HIGH RISK USER{'S' if len(high_risk_users) > 1 else ''} DETECTED</h3>
+            <div class="alert-row">
+                {badges_html}
+                {more_text}
+            </div>
+            <div class="alert-meta">
+                ⏱ Alert generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} &nbsp;|&nbsp;
+                🔍 Action required: Open <b>User Drilldown</b> tab to investigate &nbsp;|&nbsp;
+                📄 Generate PDF report for each flagged user
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+if len(med_risk_users) > 0:
+    med_badges = "".join([
+        f'<span class="warning-badge">{row["user"]} — {row["risk_score"]:.0f}</span>'
+        for _, row in med_risk_users.head(8).iterrows()
+    ])
+    more_med = f'+{len(med_risk_users)-8} more' if len(med_risk_users) > 8 else ""
+    st.markdown(f"""
+        <div class="warning-banner">
+            <h4>⚠️ MONITORING WATCH — {len(med_risk_users)} Medium Risk User{'s' if len(med_risk_users) > 1 else ''}</h4>
+            <div>{med_badges} <span style="color:#aaa;font-size:11px;">{more_med}</span></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+if len(high_risk_users) == 0 and len(med_risk_users) == 0:
+    st.markdown("""
+        <div class="all-clear">
+            ✅ ALL CLEAR — No anomalous users detected in current dataset
+        </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Risk Overview",
     "👤 User Drilldown",

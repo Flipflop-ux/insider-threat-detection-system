@@ -259,6 +259,15 @@ def generate_pdf_report(user_id, user_data, df, behavioral_fig_bytes):
 st.sidebar.image("https://img.icons8.com/color/96/security-shield-green.png", width=80)
 st.sidebar.title("Insider Threat Detection System")
 st.sidebar.markdown("---")
+
+# File uploader MUST be defined before load data
+st.sidebar.markdown("### Upload Data")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload anomaly_scores.csv",
+    type=["csv"],
+    help="Upload the output file from your Isolation Forest pipeline"
+)
+st.sidebar.markdown("---")
 st.sidebar.markdown("### Filters")
 
 # ── LOAD DATA ─────────────────────────────────────────────────
@@ -330,7 +339,7 @@ else:
     df = load_sample_data()
     st.sidebar.info("Using sample data — upload your anomaly_scores.csv to use real results")
 
-# ── SIDEBAR FILTERS ───────────────────────────────────────────
+# Filters (appear below upload in sidebar but use df which is now loaded)
 risk_filter = st.sidebar.multiselect(
     "Filter by Risk Level",
     options=["High", "Medium", "Low"],
@@ -347,16 +356,6 @@ df_filtered = df[
     (df["risk_score"] >= score_range[0]) &
     (df["risk_score"] <= score_range[1])
 ]
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Upload Data")
-
-uploaded_file = st.sidebar.file_uploader(
-    "Upload anomaly_scores.csv",
-    type=["csv"],
-    help="Upload the output file from your Isolation Forest pipeline"
-)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Showing:** {len(df_filtered)} of {len(df)} users")

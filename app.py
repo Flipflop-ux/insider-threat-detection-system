@@ -349,18 +349,6 @@ else:
     df = load_sample_data()
     st.sidebar.info("Using sample data — upload your anomaly_scores.csv to use real results")
 
-# Filters (appear below upload in sidebar but use df which is now loaded)
-risk_filter = st.sidebar.multiselect(
-    "Filter by Risk Level",
-    options=["High", "Medium", "Low"],
-    default=["High", "Medium", "Low"]
-)
-
-score_range = st.sidebar.slider(
-    "Risk Score Range",
-    min_value=0, max_value=100, value=(0, 100)
-)
-
 df_filtered = df[
     (df["risk_level"].isin(risk_filter)) &
     (df["risk_score"] >= score_range[0]) &
